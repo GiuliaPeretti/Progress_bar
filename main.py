@@ -6,6 +6,7 @@ def draw_background():
     screen.fill(BACKGROUND_COLOR)
     draw_bars()
     draw_text()
+    draw_textbar()
     display_progress()
 
 def draw_bars():
@@ -24,22 +25,29 @@ def draw_text():
     screen.blit(text, (50, 1.8*(SCREEN_HEIGHT/4)-30))
 
 def draw_buttons():
-    x1,y1,w,h=SCREEN_WIDTH-50-80-80-80-10-10-15-15, 3*(SCREEN_HEIGHT/5), 80, 30
+    x1,y1,w,h=SCREEN_WIDTH-50-95-95-10, 3*(SCREEN_HEIGHT/5), 95, 30
     pygame.draw.rect(screen, (200,200,200), (x1,y1,w,h))
     pygame.draw.rect(screen, (0,0,0), (x1,y1,w,h), 2)
 
     font = pygame.font.SysFont('arial', 17)
     text=font.render(str("Set goal"), True, (0,0,0))
-    screen.blit(text, (x1+9, y1+5))
+    screen.blit(text, (x1+17, y1+5))
 
     b_set_goal=((x1,x1+w),(y1,y1+h))
 
-
-    x1,y1,w,h= x1+w+10, y1, w+15, h
+    x1,y1,w,h=x1+w+10, 3*(SCREEN_HEIGHT/5), 95, 30
     pygame.draw.rect(screen, (200,200,200), (x1,y1,w,h))
     pygame.draw.rect(screen, (0,0,0), (x1,y1,w,h), 2)
 
-    font = pygame.font.SysFont('arial', 17)
+    text=font.render(str("Reset"), True, (0,0,0))
+    screen.blit(text, (x1+25, y1+5))
+
+    b_reset=((x1,x1+w),(y1,y1+h))
+
+    x1,y1,w,h= SCREEN_WIDTH-50-95-95-10, y1+40, 95, h
+    pygame.draw.rect(screen, (200,200,200), (x1,y1,w,h))
+    pygame.draw.rect(screen, (0,0,0), (x1,y1,w,h), 2)
+
     text=font.render(str("Add hours"), True, (0,0,0))
     screen.blit(text, (x1+9, y1+5))
 
@@ -49,13 +57,18 @@ def draw_buttons():
     pygame.draw.rect(screen, (200,200,200), (x1,y1,w,h))
     pygame.draw.rect(screen, (0,0,0), (x1,y1,w,h), 2)
 
-    font = pygame.font.SysFont('arial', 17)
     text=font.render(str("Add ticket"), True, (0,0,0))
     screen.blit(text, (x1+9, y1+5))
 
     b_add_ticket=((x1,x1+w),(y1,y1+h))
 
-    return(b_set_goal,b_add_hours,b_add_ticket)
+    return(b_set_goal,b_reset,b_add_hours,b_add_ticket)
+
+def draw_textbar():
+    bar_width=SCREEN_WIDTH-310
+    x1,y1,w,h=50, 3*(SCREEN_HEIGHT/5), bar_width, 30
+    pygame.draw.rect(screen, (200,200,200), (x1,y1,w,h))
+    pygame.draw.rect(screen, (0,0,0), (x1,y1,w,h), 2)
 
 def clear_progres():
     bar_width=(SCREEN_WIDTH-100)
@@ -67,6 +80,12 @@ def clear_progres():
     pygame.draw.rect(screen, BACKGROUND_COLOR, (x1,y1,w,h))
     draw_bars()
 
+def write_in_textbar(n):
+    draw_textbar()
+    if(n!=0):
+        font = pygame.font.SysFont('arial', 20)
+        text=font.render(str(n), True, (0,0,0))
+        screen.blit(text, (55, 3*(SCREEN_HEIGHT/5)+3))
 
 def display_progress():
     clear_progres()
@@ -119,18 +138,25 @@ def add_ticket(n):
             f.write(l)
         print("added ticket "+str(n))
 
-
 def add_ticket(n):
     if(n>=0):
         with open('data.json', 'r') as f:
             l=f.read()
         l=ast.literal_eval(l)
+        print("l: ")
+        print(l)
+        print(l['hours_sessions'])
         #sommare tutti gli elementi dell'array e controllare che non sia maggiore del goal
         #se si append la differenza o 0
-        if(l['hours_sessions']+n>=l['hours_goal']):
-            l['hours_sessions']=l['hours_sessions'].append()
+        somma=sum(l['hours_sessions'])
+        print(somma)
+        if(somma+n>=l['hours_goal']):
+            l['hours_sessions'].append(l['hours_goal']-somma)
+            print(l['hours_sessions'])
         else:
-            l['hours_sessions']=l['hours_sessions'].append(n)
+            l['hours_sessions'].append(n)
+            print(l['hours_sessions'])
+        print(l)
         l=str(l)
         l=l.replace("'",'"')
         with open('data.json', 'w') as f:
@@ -147,7 +173,7 @@ font = pygame.font.SysFont('arial', 25)
 run  = True
 selected_cell=(-1,-1)
 draw_background()
-b_set_goal,b_add_hours,b_add_ticket = draw_buttons()
+b_set_goal, b_reset, b_add_hours, b_add_ticket = draw_buttons()
 number=0
 while run:
 
@@ -160,21 +186,24 @@ while run:
                 print("set goal")
                 set_ticket_goal(number)
                 display_progress()
-                number=0
             if(x>b_add_hours[0][0] and x<=b_add_hours[0][1] and y>=b_add_hours[1][0] and y<=b_add_hours[1][1]):
                 print("add hours")
+                add_ticket(number)
+                display_progress()
             if(x>b_add_ticket[0][0] and x<=b_add_ticket[0][1] and y>=b_add_ticket[1][0] and y<=b_add_ticket[1][1]):
                 print("add ticket")
                 add_ticket(number)
                 display_progress()
-                number=0
         if (event.type == pygame.KEYDOWN):
             if event.key==pygame.K_SPACE:
-                set_ticket_goal(number)
+                number=number//10
+                print(number)
+                write_in_textbar(number)
             for i in range(len(INPUTS)):
                 if (event.key==INPUTS[i]):
                     number=number*10+i
                     print(number)
+                    write_in_textbar(number)
 
 
 
